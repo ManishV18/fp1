@@ -1,61 +1,47 @@
 import os
-import uuid
-from google.cloud import firestore, pubsub_v1, storage
-from utils import split_video, upload_to_bucket, publish_message
+import subprocess
+from google.cloud import storage, pubsub_v1
 
-# Environment variables
-PROJECT_ID = os.getenv('GOOGLE_CLOUD_PROJECT', 'dcsc-final-project')
-VIDEO_BUCKET = os.getenv('VIDEO_BUCKET', 'dcsc-final-project-bucket-mava6837')
-PUBSUB_TOPIC = os.getenv('WORKER_TOPIC', 'video-chunks-tasks')
-
-# Firestore collection name
-FIRESTORE_COLLECTION = 'video_tasks'
-
-# Initialize Google Cloud clients
-firestore_client = firestore.Client()
-publisher = pubsub_v1.PublisherClient()
-storage_client = storage.Client()
-
-def process_task(task_id, video_url):
+def split_video(video_url, output_dir, chunk_duration=60):
     """
-    Process a video task:
-    - Split video into chunks
-    - Upload chunks to Cloud Storage
-    - Publish tasks for workers
-    - Track progress in Firestore
+    Split a video into chunks of specified duration.
+    Args:
+        video_url: The path or URL to the video.
+        output_dir: The directory to save the chunks.
+        chunk_duration: Duration of each chunk in seconds.
+    Returns:
+        List of paths to the video chunks.
     """
-    print(f"Processing task {task_id} for video: {video_url}")
+    chunk_paths = []
+    base_name = os.path.basename(video_url).split('.')[0]
 
-    # Step 1: Split video into chunks
-    chunks_dir = f'tmp/{task_id}/chunks'
-    os.makedirs(chunks_dir, exist_ok=True)
-    chunk_paths = split_video(video_url, chunks_dir)
-    print(f"Video split into {len(chunk_paths)} chunks.")
+    command = [
+        'ffmpeg', '-i', video_url,
+        '-c', 'copy', '-f', 'segment', '-segment_time', str(chunk_duration),
+        '-reset_timestamps', '1', f'{output_dir}/{base_name}_chunk_%03d.mp4'
+    ]
 
-    # Step 2: Upload chunks to Cloud Storage
-    for i, chunk_path in enumerate(chunk_paths):
-        chunk_name = f'{task_id}/chunk_{i}.mp4'
-        upload_to_bucket(storage_client, VIDEO_BUCKET, chunk_path, chunk_name)
-        print(f"Uploaded {chunk_name} to Cloud Storage.")
+    subprocess.run(command, check=True)
 
-    # Step 3: Publish tasks for workers
-    for i, chunk_path in enumerate(chunk_paths):
-        chunk_name = f'{task_id}/chunk_{i}.mp4'
-        message_data = {
-            'task_id': task_id,
-            'chunk_id': i,
-            'chunk_name': chunk_name,
-        }
-        publish_message(publisher, PUBSUB_TOPIC, message_data)
-        print(f"Published task for chunk {i}.")
+    for file_name in os.listdir(output_dir):
+        if file_name.endswith('.mp4'):
+            chunk_paths.append(os.path.join(output_dir, file_name))
 
-    # Step 4: Update Firestore with task progress
-    firestore_client.collection(FIRESTORE_COLLECTION).document(task_id).update({
-        'status': 'IN_PROGRESS',
-        'num_chunks': len(chunk_paths),
-        'processed_chunks': 0
-    })
-    print(f"Task {task_id} marked as IN_PROGRESS.")
+    return chunk_paths
 
-if __name__ == '__main__':
-    print("Master node initialized.")
+def upload_to_bucket(storage_client, bucket_name, source_file_path, destination_blob_name):
+    """
+    Upload a file to a Cloud Storage bucket.
+    """
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+    blob.upload_from_filename(source_file_path)
+    print(f"Uploaded {source_file_path} to {destination_blob_name}.")
+
+def publish_message(publisher, topic, message_data):
+    """
+    Publish a message to a Pub/Sub topic.
+    """
+    topic_path = publisher.topic_path(os.getenv('GOOGLE_CLOUD_PROJECT'), topic)
+    publisher.publish(topic_path, data=str(message_data).encode('utf-8'))
+    print(f"Published message to topic {topic}: {message_data}")
