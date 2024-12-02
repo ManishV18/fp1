@@ -54,17 +54,18 @@ def create_pubsub_resources():
     except Exception as e:
         print(f"Error creating Pub/Sub resources: {e}")
 
-# Create Firestore Collection (Task Tracking)
 def create_firestore_collection():
     try:
         collection_ref = firestore_client.collection("tasks")
-        doc_ref, _ = collection_ref.add({
+        doc_ref = collection_ref.document()  # Create a new document reference
+        doc_ref.set({  # Use set() to add data to the document
             "status": "initialized",
             "task_id": "example_task_1"
         })
         print(f"Firestore collection 'tasks' created with doc ID {doc_ref.id}.")
     except Exception as e:
         print(f"Error creating Firestore collection: {e}")
+
 
 # Main function to run all resource creation
 def setup_cloud_resources():
