@@ -1,7 +1,7 @@
 from google.cloud import storage, pubsub_v1, firestore
 
 # Set up project details
-project_id = "dcsc-final-project"
+project_id = "dcsc-final-project-443518"
 bucket_name_videos = "dcsc-final-project-bucket-videos-mava6837"
 bucket_name_summaries = "dcsc-final-project-bucket-summaries-mava6837"
 topic_name = "video-processing-tasks"
