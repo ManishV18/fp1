@@ -7,7 +7,7 @@ import os
 app = Flask(__name__)
 
 # Initialize Google Cloud Clients
-project_id = "dcsc-final-project"
+project_id = "dcsc-final-project-443518"
 topic_id = "video-processing-tasks"
 firestore_client = firestore.Client()
 
