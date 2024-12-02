@@ -4,7 +4,7 @@ from google.cloud import storage, pubsub_v1
 from utils import transcribe_video, summarize_text, upload_summary_to_gcs
 
 # Google Cloud Setup
-project_id = "dcsc-final-project"
+project_id = "dcsc-final-project-443518"
 subscription_id = "video-processing-tasks-subscription"
 bucket_name = "dcsc-final-project-bucket-mava6837"
 storage_client = storage.Client()
