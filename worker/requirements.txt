@@ -1,6 +1,4 @@
-google-cloud-firestore==2.11.0
-google-cloud-pubsub==2.14.1
-google-cloud-storage==2.10.0
-vosk==0.3.45
-transformers==4.30.2
-ffmpeg-python==0.2.0
+google-cloud-storage==2.15.0
+google-cloud-pubsub==2.15.0
+whisper==1.0.0
+transformers==4.35.0
