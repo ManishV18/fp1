@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set up environment variables
-PROJECT_ID="dcsc-final-project"
+PROJECT_ID="dcsc-final-project-443518"
 ZONE="us-central1-a"
 VM_NAME_PREFIX="worker-node-vm"
 IMAGE_FAMILY="debian-10"
