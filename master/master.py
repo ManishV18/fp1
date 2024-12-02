@@ -6,7 +6,7 @@ from google.cloud import pubsub_v1, firestore, storage
 from utils import download_video, split_video, upload_to_gcs
 
 # Google Cloud Setup
-project_id = "dcsc-final-project"
+project_id = "dcsc-final-project-443518"
 topic_id = "video-processing-tasks"
 bucket_name = "dcsc-final-project-bucket-mava6837"
 firestore_client = firestore.Client()
