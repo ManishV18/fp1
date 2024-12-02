@@ -1,89 +1,65 @@
 import os
-import json
-from google.cloud import pubsub_v1, storage, firestore
-from utils import download_from_bucket, transcribe_audio, summarize_text, upload_to_bucket
+import tempfile
+from google.cloud import storage, pubsub_v1
+from utils import transcribe_video, summarize_text, upload_summary_to_gcs
 
-# Environment variables
-PROJECT_ID = os.getenv('GOOGLE_CLOUD_PROJECT', 'dcsc-final-project')
-VIDEO_BUCKET = os.getenv('VIDEO_BUCKET', 'dcsc-final-project-bucket-mava6837')
-RESULTS_BUCKET = os.getenv('RESULTS_BUCKET', 'dcsc-final-project-results')
-FIRESTORE_COLLECTION = 'video_tasks'
-SUBSCRIPTION_ID = os.getenv('SUBSCRIPTION_ID', 'video-chunks-sub')
-
-# Initialize Google Cloud clients
-firestore_client = firestore.Client()
+# Google Cloud Setup
+project_id = "dcsc-final-project"
+subscription_id = "video-processing-tasks-subscription"
+bucket_name = "dcsc-final-project-bucket-mava6837"
 storage_client = storage.Client()
+
+# Initialize Pub/Sub Subscriber
 subscriber = pubsub_v1.SubscriberClient()
+subscription_path = subscriber.subscription_path(project_id, subscription_id)
 
-def process_message(message):
-    """
-    Process a single Pub/Sub message:
-    - Download video chunk from Cloud Storage.
-    - Perform transcription and summarization.
-    - Store results in Cloud Storage and Firestore.
-    """
-    print(f"Received message: {message.data}")
-    message_data = json.loads(message.data.decode('utf-8'))
-
-    task_id = message_data['task_id']
-    chunk_id = message_data['chunk_id']
-    chunk_name = message_data['chunk_name']
-
-    # Local paths
-    local_chunk_path = f'tmp/{task_id}/{chunk_name.split("/")[-1]}'
-    local_result_path = f'tmp/{task_id}/result_{chunk_id}.txt'
-
+# Callback for handling incoming tasks from Pub/Sub
+def callback(message):
     try:
-        # Step 1: Download the video chunk from Cloud Storage
-        download_from_bucket(storage_client, VIDEO_BUCKET, chunk_name, local_chunk_path)
+        task_data = eval(message.data.decode('utf-8'))  # Parse the incoming message
+        task_id = task_data['task_id']
+        gcs_path = task_data['gcs_path']
+        chunk_id = task_data['chunk_id']
 
-        # Step 2: Perform transcription
-        transcript = transcribe_audio(local_chunk_path)
-        print(f"Transcription completed for chunk {chunk_id}.")
+        print(f"Processing task {task_id}, chunk {chunk_id} from GCS path: {gcs_path}")
 
-        # Step 3: Perform summarization
-        summary = summarize_text(transcript)
-        print(f"Summarization completed for chunk {chunk_id}.")
+        # Step 1: Download video chunk from Cloud Storage
+        video_chunk_path = download_chunk_from_gcs(gcs_path)
+        print(f"Downloaded chunk {chunk_id} to {video_chunk_path}")
 
-        # Step 4: Save results to a file
-        with open(local_result_path, 'w') as result_file:
-            result_file.write(f"Transcript:\n{transcript}\n\nSummary:\n{summary}")
-        
-        # Step 5: Upload results to Cloud Storage
-        result_blob_name = f'{task_id}/result_{chunk_id}.txt'
-        upload_to_bucket(storage_client, RESULTS_BUCKET, local_result_path, result_blob_name)
-        print(f"Results uploaded for chunk {chunk_id}.")
+        # Step 2: Transcribe the video chunk into text
+        transcription = transcribe_video(video_chunk_path)
+        print(f"Transcription completed for chunk {chunk_id}")
 
-        # Step 6: Update Firestore
-        doc_ref = firestore_client.collection(FIRESTORE_COLLECTION).document(task_id)
-        doc_ref.update({
-            f'chunk_{chunk_id}_status': 'COMPLETED',
-            f'chunk_{chunk_id}_summary': summary,
-            'processed_chunks': firestore.Increment(1)
-        })
+        # Step 3: Summarize the transcription using NLP
+        summary = summarize_text(transcription)
+        print(f"Summary generated for chunk {chunk_id}")
 
-        print(f"Firestore updated for chunk {chunk_id}.")
-        message.ack()  # Acknowledge the message
+        # Step 4: Upload the summary to Cloud Storage
+        summary_path = upload_summary_to_gcs(summary, task_id, chunk_id)
+        print(f"Summary uploaded to GCS: {summary_path}")
+
+        # Acknowledge the message so it won't be processed again
+        message.ack()
 
     except Exception as e:
-        print(f"Error processing chunk {chunk_id}: {e}")
-        message.nack()  # Negative acknowledge for retry
+        print(f"Error processing task: {e}")
+        message.nack()
 
-def listen_to_pubsub():
+# Download a video chunk from Google Cloud Storage
+def download_chunk_from_gcs(gcs_path):
     """
-    Listen to Pub/Sub messages and process video chunks.
+    Downloads a chunk from Cloud Storage to a temporary local file.
     """
-    subscription_path = subscriber.subscription_path(PROJECT_ID, SUBSCRIPTION_ID)
-    streaming_pull_future = subscriber.subscribe(subscription_path, callback=process_message)
-    print(f"Listening for messages on {subscription_path}...")
+    blob = storage_client.bucket(bucket_name).blob(gcs_path)
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
+    blob.download_to_filename(temp_file.name)
+    return temp_file.name
 
-    try:
-        streaming_pull_future.result()
-    except KeyboardInterrupt:
-        streaming_pull_future.cancel()
-        subscriber.close()
-        print("Shutting down worker.")
+# Listen for tasks from Pub/Sub
+def listen_for_tasks():
+    print(f"Listening for tasks on {subscription_path}...")
+    subscriber.subscribe(subscription_path, callback=callback)
 
-if __name__ == '__main__':
-    os.makedirs('tmp', exist_ok=True)
-    listen_to_pubsub()
+if __name__ == "__main__":
+    listen_for_tasks()
