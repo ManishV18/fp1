@@ -4,7 +4,7 @@
 PROJECT_ID="dcsc-final-project-443518"
 ZONE="us-central1-a"
 VM_NAME_PREFIX="worker-node-vm"
-IMAGE_FAMILY="debian-10"
+IMAGE_FAMILY="debian-11"
 IMAGE_PROJECT="debian-cloud"
 VM_MACHINE_TYPE="n1-standard-1"
 WORKER_COUNT=3
