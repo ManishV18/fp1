@@ -10,31 +10,14 @@ pip3 install --upgrade pip
 # Install project-specific dependencies for the worker node
 pip3 install google-cloud-storage google-cloud-pubsub whisper transformers
 
-# Define repository details
-GITHUB_USERNAME="ManishV18"
-REPO_NAME="fp1"
-TOKEN="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"  # Replace with your actual token
-PROJECT_REPO="https://${TOKEN}@github.com/${GITHUB_USERNAME}/${REPO_NAME}.git"
-PROJECT_DIR="/home/ubuntu/${REPO_NAME}"
-
 # Clone the project repository
-if [ ! -d "$PROJECT_DIR" ]; then
-  git clone "$PROJECT_REPO" "$PROJECT_DIR"
-else
-  echo "Repository already exists at $PROJECT_DIR."
-fi
+PROJECT_REPO="https://github.com/ManishV18/fp1.git"
+PROJECT_DIR="/home/ubuntu/fp1"
+git clone "$PROJECT_REPO" "$PROJECT_DIR"
 
 # Navigate to the worker directory and install Python dependencies
-cd "$PROJECT_DIR/worker" || exit 1
-if [ -f "requirements.txt" ]; then
-  pip3 install -r requirements.txt
-else
-  echo "No requirements.txt found in $PROJECT_DIR/worker."
-fi
+cd "$PROJECT_DIR/worker"
+pip3 install -r requirements.txt
 
 # Run the worker script
-if [ -f "worker.py" ]; then
-  python3 worker.py
-else
-  echo "No worker.py script found in $PROJECT_DIR/worker."
-fi
+python3 worker.py
