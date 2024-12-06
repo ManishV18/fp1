@@ -1,6 +1,5 @@
 Flask
-requests
-moviepy
-openai-whisper
+youtube_dl
 transformers
 torch
+moviepy
