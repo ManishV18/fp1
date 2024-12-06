@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 from transformers import pipeline
-import yt_dlp as youtube_dl
-from youtube_dl import YoutubeDL
+from pytube import YouTube
 import os
 from moviepy.editor import AudioFileClip
 
@@ -9,17 +8,20 @@ app = Flask(__name__)
 
 def download_audio_from_youtube(url, output_path):
     """Download audio from a YouTube video."""
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'wav',
-            'preferredquality': '192',
-        }],
-        'outtmpl': output_path
-    }
-    with YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
+    yt = YouTube(url)
+    
+    # Extract only the audio stream
+    audio_stream = yt.streams.filter(only_audio=True).first()
+    
+    # Download the audio
+    out_file = audio_stream.download(output_path=output_path)
+    
+    # Rename the file to .mp3
+    base, ext = os.path.splitext(out_file)
+    new_file = base + '.mp3'
+    os.rename(out_file, new_file)
+    
+    return new_file
 
 def summarize_text(text):
     """Summarize text using Hugging Face Transformers."""
@@ -36,18 +38,18 @@ def index():
         if url:
             try:
                 # Step 1: Download audio from YouTube
-                audio_path = "audio.wav"
-                download_audio_from_youtube(url, "temp_video.%(ext)s")
-                
+                audio_path = "temp_audio.mp3"
+                audio_file = download_audio_from_youtube(url, ".")
+
                 # Step 2: Extract text from audio using Hugging Face's pipeline
                 model = pipeline("automatic-speech-recognition", model="facebook/wav2vec2-large-960h-lv60-self")
-                transcription = model(audio_path, chunk_length_s=10)['text']
+                transcription = model(audio_file)['text']
 
                 # Step 3: Summarize the transcription
                 summary = summarize_text(transcription)
                 
                 # Cleanup
-                os.remove(audio_path)
+                os.remove(audio_file)
 
             except Exception as e:
                 summary = f"Error: {str(e)}"
