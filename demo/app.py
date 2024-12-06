@@ -16,10 +16,11 @@ def get_transcript(video_id, language='en'):
 
 def summarize_text(text):
     """Summarize text using Hugging Face Transformers."""
-    summarizer = pipeline("summarization", model="google/pegasus-xsum")
+    summarizer = pipeline("summarization", model="google/pegasus-xsum", framework="tf")
     tokenizer_kwargs = {'truncation': True, 'max_length': 512}
     summary = summarizer(text, min_length=30, do_sample=False, **tokenizer_kwargs)
     return summary[0]['summary_text']
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
