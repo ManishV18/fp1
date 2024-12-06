@@ -7,29 +7,35 @@ import os
 app = Flask(__name__)
 
 def download_audio_from_youtube(url, output_path):
-    """Download audio from a YouTube video."""
-    yt = YouTube(url)
+    # """Download audio from a YouTube video."""
+    # yt = YouTube(url)
     
-    # Extract only the audio stream
-    audio_stream = yt.streams.filter(only_audio=True).first()
+    # # Extract only the audio stream
+    # audio_stream = yt.streams.filter(only_audio=True).first()
     
-    # Download the audio
-    out_file = audio_stream.download(output_path=output_path)
+    # # Download the audio
+    # out_file = audio_stream.download(output_path=output_path)
     
-    # Rename the file to .mp3
-    base, ext = os.path.splitext(out_file)
-    new_file = base + '.mp3'
-    os.rename(out_file, new_file)
+    # # Rename the file to .mp3
+    # base, ext = os.path.splitext(out_file)
+    # new_file = base + '.mp3'
+    # os.rename(out_file, new_file)
     
-    return new_file
+    # return new_file
 
+    return "Done"
+    
 def summarize_text(text):
-    """Summarize text using Hugging Face Transformers."""
-    summarizer = pipeline("summarization", model="google/pegasus-xsum")
-    tokenizer_kwargs = {'truncation': True, 'max_length': 512}
-    summary = summarizer(text, min_length=30, do_sample=False, **tokenizer_kwargs)
-    return summary[0]['summary_text']
+    # """Summarize text using Hugging Face Transformers."""
+    # summarizer = pipeline("summarization", model="google/pegasus-xsum")
+    # tokenizer_kwargs = {'truncation': True, 'max_length': 512}
+    # summary = summarizer(text, min_length=30, do_sample=False, **tokenizer_kwargs)
+    # return summary[0]['summary_text']
 
+    output = "This is the final summary."
+
+    return output
+    
 @app.route('/', methods=['GET', 'POST'])
 def index():
     summary = None
