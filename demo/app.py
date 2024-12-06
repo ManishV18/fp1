@@ -4,6 +4,10 @@ from pytube import YouTube
 import os
 #from moviepy.editor import AudioFileClip
 
+import time
+
+
+
 app = Flask(__name__)
 
 def download_audio_from_youtube(url, output_path):
@@ -53,6 +57,8 @@ def index():
 
                 # # Step 3: Summarize the transcription
                 # summary = summarize_text(transcription)
+
+                time.sleep(5)
 
                 summary = "This is the final summary."
 
