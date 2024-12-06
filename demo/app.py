@@ -43,19 +43,22 @@ def index():
         url = request.form.get('url')
         if url:
             try:
-                # Step 1: Download audio from YouTube
-                audio_path = "temp_audio.mp3"
-                audio_file = download_audio_from_youtube(url, ".")
+                # # Step 1: Download audio from YouTube
+                # audio_path = "temp_audio.mp3"
+                # audio_file = download_audio_from_youtube(url, ".")
 
-                # Step 2: Extract text from audio using Hugging Face's pipeline
-                model = pipeline("automatic-speech-recognition", model="facebook/wav2vec2-large-960h-lv60-self")
-                transcription = model(audio_file)['text']
+                # # Step 2: Extract text from audio using Hugging Face's pipeline
+                # model = pipeline("automatic-speech-recognition", model="facebook/wav2vec2-large-960h-lv60-self")
+                # transcription = model(audio_file)['text']
 
-                # Step 3: Summarize the transcription
-                summary = summarize_text(transcription)
+                # # Step 3: Summarize the transcription
+                # summary = summarize_text(transcription)
+
+                summary = "This is the final summary."
+
                 
                 # Cleanup
-                os.remove(audio_file)
+                #os.remove(audio_file)
 
             except Exception as e:
                 summary = f"Error: {str(e)}"
