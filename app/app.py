@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 from google.cloud import pubsub_v1, firestore
 import re
 import os
@@ -19,28 +19,30 @@ def is_valid_youtube_url(url):
     youtube_regex = r'(https?://)?(www\.)?(youtube\.com|youtu\.be)/(watch\?v=|embed/|v/)?[A-Za-z0-9_-]{11}'
     return re.match(youtube_regex, url)
 
-@app.route('/submit', methods=['POST'])
-def submit_video():
+@app.route('/', methods=['GET', 'POST'])
+def index():
     """
-    Endpoint to submit a YouTube URL for processing.
+    Home route to render the input form and handle submissions.
     """
-    data = request.get_json()
-    youtube_url = data.get('youtube_url')
+    if request.method == 'POST':
+        youtube_url = request.form.get('url')
+        if not youtube_url or not is_valid_youtube_url(youtube_url):
+            return render_template("index.html", error="Invalid YouTube URL")
 
-    if not youtube_url or not is_valid_youtube_url(youtube_url):
-        return jsonify({"error": "Invalid YouTube URL"}), 400
+        # Publish the task to Pub/Sub
+        message = {"youtube_url": youtube_url}
+        publisher.publish(topic_path, data=str(message).encode("utf-8"))
+        
+        # Save initial task status in Firestore
+        doc_ref = firestore_client.collection("video-tasks").document()
+        doc_ref.set({
+            "url": youtube_url,
+            "status": "submitted"
+        })
 
-    # Publish the task to Pub/Sub
-    message = {"youtube_url": youtube_url}
-    publisher.publish(topic_path, data=str(message).encode("utf-8"))
+        return redirect(url_for('check_status', task_id=doc_ref.id))
     
-    # Save initial task status in Firestore
-    doc_ref = firestore_client.collection("video-tasks").document()
-    doc_ref.set({
-        "url": youtube_url,
-        "status": "submitted"
-    })
-    return jsonify({"message": "Task submitted successfully", "task_id": doc_ref.id}), 200
+    return render_template("index.html")
 
 @app.route('/status/<task_id>', methods=['GET'])
 def check_status(task_id):
@@ -53,7 +55,9 @@ def check_status(task_id):
     if not doc.exists:
         return jsonify({"error": "Task not found"}), 404
 
-    return jsonify({"task_id": task_id, "status": doc.to_dict().get("status")}), 200
+    task_data = doc.to_dict()
+    status = task_data.get("status", "unknown")
+    return render_template("status.html", task_id=task_id, status=status)
 
 @app.route('/summary/<task_id>', methods=['GET'])
 def get_summary(task_id):
@@ -68,11 +72,11 @@ def get_summary(task_id):
 
     task_data = doc.to_dict()
     if task_data.get("status") != "completed":
-        return jsonify({"error": "Task not yet completed"}), 400
+        return render_template("status.html", task_id=task_id, status=task_data.get("status", "unknown"))
 
     summary = task_data.get("summary", "Summary not available.")
-    return jsonify({"task_id": task_id, "summary": summary}), 200
+    return render_template("summary.html", task_id=task_id, summary=summary)
 
 if __name__ == '__main__':
-    # Run the Flask app locally
-    app.run(host='0.0.0.0', port=8080)
+    # Run the Flask app locally on port 5000
+    app.run(host='0.0.0.0', port=5000)
