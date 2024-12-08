@@ -7,9 +7,6 @@ apt-get install -y python3-pip git
 # Upgrade pip
 pip3 install --upgrade pip
 
-# Install project-specific dependencies for the master node
-pip3 install google-cloud-storage google-cloud-pubsub flask whisper transformers
-
 # Clone the project repository
 PROJECT_REPO="https://github.com/ManishV18/cu-csci-4253-datacenter-fall-2024 / finalproject-final-project-team-89.git"
 
