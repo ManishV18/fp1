@@ -59,8 +59,11 @@ def process_video(youtube_url, task_id):
         })
         print("Task status updated to 'failed' in Firestore.")
 
-if __name__ == "__main__":
-    # Example usage
-    youtube_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"  # Example YouTube URL
-    task_id = "task-12345"  # Example task ID
-    process_video(youtube_url, task_id)
+
+# Uncomment below for testing 
+
+# if __name__ == "__main__":
+#     # Example usage
+#     youtube_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"  # Example YouTube URL
+#     task_id = "task-12345"  # Example task ID
+#     process_video(youtube_url, task_id)
