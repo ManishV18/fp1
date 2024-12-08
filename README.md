@@ -1,4 +1,4 @@
-Here is a `README.md` file for your project, explaining the structure and providing instructions for running the code:
+Here’s the updated `README.md` file reflecting the changes and including the necessary commands to upload and set up the startup scripts:
 
 ```markdown
 # Video Processing with Google Cloud Platform
@@ -61,14 +61,39 @@ cd cloud_setup
 python3 setup_resources.py
 ```
 
-### 2. Deploy Master and Worker Nodes
-Use the deployment scripts to set up the master and worker nodes:
+### 2. Upload Startup Scripts to Cloud Storage
+Upload the `startup-master.sh` and `startup-worker.sh` scripts to your GCP bucket:
+
 ```bash
+PROJECT_ID="your-project-id"
+BUCKET_NAME="your-bucket-name"
+
+# Upload startup scripts
+gsutil cp startup-master.sh gs://$BUCKET_NAME/startup-scripts/
+gsutil cp startup-worker.sh gs://$BUCKET_NAME/startup-scripts/
+```
+
+Ensure both scripts are stored in the Cloud Storage bucket under the `startup-scripts/` directory.
+
+### 3. Deploy Master and Worker Nodes
+Use the deployment scripts to set up the master and worker nodes. These scripts include references to the startup scripts uploaded to Cloud Storage:
+
+```bash
+cd cloud_setup
+
+# Deploy Master Node
 ./deploy_master.sh
+
+# Deploy Worker Node
 ./deploy_worker.sh
 ```
 
-### 3. Run the Flask Application
+The deployment scripts pass the following metadata to GCP instances to automatically execute the startup scripts:
+```bash
+--metadata=startup-script-url=gs://$PROJECT_ID/startup-scripts/$STARTUP_SCRIPT
+```
+
+### 4. Run the Flask Application
 Start the Flask app for user interaction:
 ```bash
 cd app
@@ -76,22 +101,6 @@ pip install -r requirements.txt
 python3 app.py
 ```
 Access the app at `http://127.0.0.1:5000`.
-
-### 4. Master Node Workflow
-The `master.py` script orchestrates the video processing tasks:
-```bash
-cd master
-pip install -r requirements.txt
-python3 master.py
-```
-
-### 5. Worker Nodes
-Worker nodes handle the processing of video chunks:
-```bash
-cd worker
-pip install -r requirements.txt
-python3 worker.py
-```
 
 ---
 
@@ -115,8 +124,3 @@ python3 worker.py
 - **Scalability**: Add more worker nodes as needed by deploying additional instances with `deploy_worker.sh`.
 
 ---
-
-## License
-
-This project is licensed under the MIT License.
-```
