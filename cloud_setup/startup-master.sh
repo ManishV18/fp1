@@ -12,11 +12,11 @@ pip3 install google-cloud-storage google-cloud-pubsub flask whisper transformers
 
 # Clone the project repository
 PROJECT_REPO="https://github.com/ManishV18/cu-csci-4253-datacenter-fall-2024 / finalproject-final-project-team-89.git"
-PROJECT_DIR="/home/ubuntu/fp1"
-git clone "$PROJECT_REPO" "$PROJECT_DIR"
+
+git clone "$PROJECT_REPO"
 
 # Navigate to the master directory and install Python dependencies
-cd "$PROJECT_DIR/master"
+cd "master"
 pip3 install -r requirements.txt
 
 # Run the master script
