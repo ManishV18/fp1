@@ -19,7 +19,7 @@ gcloud compute instances create $VM_NAME \
     --metadata=startup-script-url=gs://$PROJECT_ID/startup-scripts/$STARTUP_SCRIPT \
     --tags=http-server,https-server
 
-# SSH into the created instance (for manual configurations or checks)
-gcloud compute ssh $VM_NAME --zone=$ZONE
+# SSH into the created instance for manual configurations or checks
+#gcloud compute ssh $VM_NAME --zone=$ZONE
 
 echo "Master Node VM deployed successfully."
