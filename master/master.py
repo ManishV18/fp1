@@ -7,10 +7,12 @@ from google.cloud import pubsub_v1, firestore, storage
 # Google Cloud Setup
 project_id = "dcsc-final-project-443518"
 topic_id = "video-processing-tasks"
+summarization_topic_id = "summarization-tasks"
 bucket_name = "dcsc-final-project-bucket-mava6837"
 firestore_client = firestore.Client()
 publisher = pubsub_v1.PublisherClient()
 topic_path = publisher.topic_path(project_id, topic_id)
+summarization_topic_path = publisher.topic_path(project_id, summarization_topic_id)
 storage_client = storage.Client()
 
 # Download video from YouTube
@@ -34,9 +36,9 @@ def split_video(video_path):
     # Step 1: Create temporary directory to store video chunks
     chunk_dir = tempfile.mkdtemp()
 
-    # Step 2: Use ffmpeg to split the video into chunks (e.g., 10-minute segments)
+    # Step 2: Use ffmpeg to split the video into chunks (e.g., 5-minute segments)
     chunk_paths = []
-    chunk_duration = 600  # 10 minutes
+    chunk_duration = 300  # 5 minutes
 
     # Use ffmpeg to split video
     cmd = f"ffmpeg -i {video_path} -c copy -map 0 -segment_time {chunk_duration} -f segment {chunk_dir}/chunk_%03d.mp4"
@@ -92,7 +94,12 @@ def process_video(youtube_url, task_id):
             publisher.publish(topic_path, data=str(message).encode("utf-8"))
             print(f"Task for chunk {i} published to Pub/Sub.")
 
-        # Step 5: Update task status in Firestore
+        # Step 5: Publish summarization task to Pub/Sub
+        summarization_message = {"task_id": task_id, "chunk_paths": gcs_paths}
+        publisher.publish(summarization_topic_path, data=str(summarization_message).encode("utf-8"))
+        print("Summarization task published to Pub/Sub.")
+
+        # Step 6: Update task status in Firestore
         doc_ref = firestore_client.collection("video-tasks").document(task_id)
         doc_ref.update({
             "status": "processing",
@@ -102,11 +109,10 @@ def process_video(youtube_url, task_id):
     
     except Exception as e:
         print(f"Error in processing video: {e}")
-        # Step 6: Handle failure, update Firestore task status to failed
+        # Step 7: Handle failure, update Firestore task status to failed
         doc_ref = firestore_client.collection("video-tasks").document(task_id)
         doc_ref.update({
             "status": "failed",
             "error": str(e)
         })
         print("Task status updated to 'failed' in Firestore.")
-
