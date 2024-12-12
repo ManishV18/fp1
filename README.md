@@ -26,11 +26,9 @@ This project implements a distributed video processing pipeline using Google Clo
 ├── master
 │   ├── master.py            # Main orchestrator script for video processing
 │   ├── requirements.txt     # Python dependencies for the master node
-│   └── utils.py             # Helper functions for the master node
 └── worker
     ├── requirements.txt     # Python dependencies for the worker nodes
     ├── utils.py             # Helper functions for the worker nodes
-    └── worker.py            # Worker script for processing video chunks
 ```
 
 ---
